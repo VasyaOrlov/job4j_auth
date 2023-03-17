@@ -42,4 +42,8 @@ public class PersonService {
         personRepository.delete(person);
         return true;
     }
+
+    public Person findByLogin(String login) {
+        return personRepository.findByLogin(login);
+    }
 }

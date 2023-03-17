@@ -4,23 +4,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import ru.job4j.auth.domain.Person;
-import ru.job4j.auth.repository.PersonRepository;
 import ru.job4j.auth.service.PersonService;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 @RestController
 @RequestMapping("/person")
 public class PersonController {
     private final PersonService persons;
+    private final BCryptPasswordEncoder encoder;
     private static final Logger LOG = LoggerFactory.getLogger(PersonController.class.getName());
 
-    public PersonController(final PersonService persons) {
+    public PersonController(final PersonService persons, BCryptPasswordEncoder encoder) {
         this.persons = persons;
+        this.encoder = encoder;
     }
 
     @GetMapping("/")
@@ -37,17 +37,10 @@ public class PersonController {
         );
     }
 
-    @PostMapping("/")
-    public ResponseEntity<Person> create(@RequestBody Person person) {
-        return new ResponseEntity<>(
-                this.persons.save(person),
-                HttpStatus.CREATED
-        );
-    }
-
     @PutMapping("/")
     public ResponseEntity<Void> update(@RequestBody Person person) {
         ResponseEntity<Void> response;
+        person.setPassword(encoder.encode(person.getPassword()));
         try {
             if (!persons.update(person)) {
                 response = new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -77,5 +70,11 @@ public class PersonController {
             response = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return response;
+    }
+
+    @PostMapping("/sign-up")
+    public void signUp(@RequestBody Person person) {
+        person.setPassword(encoder.encode(person.getPassword()));
+        persons.save(person);
     }
 }
