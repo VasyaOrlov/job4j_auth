@@ -31,8 +31,8 @@ public class PersonController {
     }
 
     @GetMapping("/")
-    public List<Person> findAll() {
-        return this.persons.findAll();
+    public ResponseEntity<List<Person>> findAll() {
+        return new ResponseEntity<>(persons.findAll(), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
@@ -71,7 +71,7 @@ public class PersonController {
     }
 
     @PostMapping("/sign-up")
-    public void signUp(@RequestBody Person person) {
+    public ResponseEntity<?> signUp(@RequestBody Person person) {
         if (person.getLogin().isEmpty() || person.getPassword().isEmpty()) {
             throw new NullPointerException("Поля бъекта person не заполнены");
         }
@@ -80,6 +80,7 @@ public class PersonController {
         }
         person.setPassword(encoder.encode(person.getPassword()));
         persons.save(person);
+        return ResponseEntity.ok("success");
     }
 
     @ExceptionHandler(value = { IllegalArgumentException.class })
