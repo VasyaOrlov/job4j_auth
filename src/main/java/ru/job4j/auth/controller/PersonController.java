@@ -9,6 +9,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import ru.job4j.auth.domain.Person;
+import ru.job4j.auth.dto.PersonDTO;
 import ru.job4j.auth.service.PersonService;
 
 import javax.servlet.http.HttpServletResponse;
@@ -81,6 +82,17 @@ public class PersonController {
         person.setPassword(encoder.encode(person.getPassword()));
         persons.save(person);
         return ResponseEntity.ok("success");
+    }
+
+    @PatchMapping("/")
+    public ResponseEntity<Void> updatePassword(@RequestBody PersonDTO personDTO) {
+        Person person = persons.findByLogin(personDTO.getLogin());
+        if (person == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Person с данным login не найден.");
+        }
+        person.setPassword(personDTO.getPassword());
+        persons.update(person);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @ExceptionHandler(value = { IllegalArgumentException.class })
