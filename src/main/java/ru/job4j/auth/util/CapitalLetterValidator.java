@@ -8,8 +8,8 @@ public class CapitalLetterValidator implements ConstraintValidator<CapitalLetter
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
         if (value != null && !value.isEmpty()) {
-            return value.chars().filter(Character::isUpperCase).findFirst().isEmpty();
+            return value.chars().filter(Character::isUpperCase).findFirst().isPresent();
         }
-        return true;
+        return false;
     }
 }
