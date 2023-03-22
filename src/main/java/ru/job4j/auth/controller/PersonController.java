@@ -6,19 +6,24 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import ru.job4j.auth.domain.Person;
 import ru.job4j.auth.dto.PersonDTO;
 import ru.job4j.auth.service.PersonService;
+import ru.job4j.auth.util.ValidGroup;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+import javax.validation.constraints.Min;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
 @RestController
 @RequestMapping("/person")
+@Validated
 public class PersonController {
     private final PersonService persons;
     private final BCryptPasswordEncoder encoder;
@@ -37,7 +42,7 @@ public class PersonController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Person> findById(@PathVariable int id) {
+    public ResponseEntity<Person> findById(@Min(0) @PathVariable int id) {
         var person = this.persons.findById(id);
         return new ResponseEntity<>(
                 person.orElseThrow(() -> new ResponseStatusException(
@@ -48,10 +53,8 @@ public class PersonController {
     }
 
     @PutMapping("/")
-    public ResponseEntity<Void> update(@RequestBody Person person) {
-        if (person.getLogin().isEmpty() || person.getPassword().isEmpty()) {
-            throw new NullPointerException("Поля бъекта person не заполнены");
-        }
+    @Validated(ValidGroup.OnUpdate.class)
+    public ResponseEntity<Void> update(@Valid @RequestBody Person person) {
         person.setPassword(encoder.encode(person.getPassword()));
         if (!persons.update(person)) {
             throw new ResponseStatusException(
@@ -61,7 +64,7 @@ public class PersonController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable int id) {
+    public ResponseEntity<Void> delete(@Min(0) @PathVariable int id) {
         Person person = new Person();
         person.setId(id);
         if (!persons.delete(person)) {
@@ -72,20 +75,15 @@ public class PersonController {
     }
 
     @PostMapping("/sign-up")
-    public ResponseEntity<?> signUp(@RequestBody Person person) {
-        if (person.getLogin().isEmpty() || person.getPassword().isEmpty()) {
-            throw new NullPointerException("Поля бъекта person не заполнены");
-        }
-        if (person.getPassword().chars().filter(Character::isUpperCase).findFirst().isEmpty()) {
-            throw new IllegalArgumentException("Ошибка пароля. Должна быть хотя бы 1 заглавная буква");
-        }
+    @Validated(ValidGroup.OnCreate.class)
+    public ResponseEntity<?> signUp(@Valid @RequestBody Person person) {
         person.setPassword(encoder.encode(person.getPassword()));
         persons.save(person);
         return ResponseEntity.ok("success");
     }
 
     @PatchMapping("/")
-    public ResponseEntity<Void> updatePassword(@RequestBody PersonDTO personDTO) {
+    public ResponseEntity<Void> updatePassword(@Valid @RequestBody PersonDTO personDTO) {
         Person person = persons.findByLogin(personDTO.getLogin());
         if (person == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Person с данным login не найден.");
